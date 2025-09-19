@@ -60,7 +60,7 @@ rule prepare:
     shell:
         """
         cat {input} \
-        | python {params.cadd}/src/scripts/VCF2vepVCF.py \
+        | VCF2vepVCF.py \
         | sort -k1,1 -k2,2n -k4,4 -k5,5 \
         | uniq > {output} 2> {log}
         """
@@ -90,7 +90,7 @@ checkpoint prescore:
             for PRESCORED in $(ls {input.prescored}/*.tsv.gz)
             do
                 cat {input.vcf}.new \
-                | python {params.cadd}/src/scripts/extract_scored.py --header \
+                | extract_scored.py --header \
                     -p $PRESCORED --found_out={output.prescored}.tmp \
                 > {input.vcf}.tmp 2>> {log};
                 cat {output.prescored}.tmp >> {output.prescored}
@@ -155,19 +155,19 @@ rule annotate_esm:
         model_directory=`dirname {input.models[0]}`;
         model_directory=`dirname $model_directory`;
 
-        python {params.cadd}/src/scripts/lib/tools/esmScore/esmScore_missense_av_fast.py \
+        esmScore_missense_av_fast.py \
         --input {input.vcf} \
         --transcripts {input.transcripts} \
         --model-directory $model_directory {params.models} \
         --output {output.missens} --batch-size {params.batch_size} &> {log}
 
-        python {params.cadd}/src/scripts/lib/tools/esmScore/esmScore_frameshift_av.py \
+        esmScore_frameshift_av.py \
         --input {output.missens} \
         --transcripts {input.transcripts} \
         --model-directory $model_directory {params.models} \
         --output {output.frameshift} --batch-size {params.batch_size} &>> {log}
 
-        python {params.cadd}/src/scripts/lib/tools/esmScore/esmScore_inFrame_av.py \
+        esmScore_inFrame_av.py \
         --input {output.frameshift} \
         --transcripts {input.transcripts} \
         --model-directory $model_directory {params.models} \
@@ -196,7 +196,7 @@ rule annotate_regseq:
         cadd=os.environ["CADD"],
     shell:
         """
-        python {params.cadd}/src/scripts/lib/tools/regulatorySequence/predictVariants.py \
+        predictVariants.py \
         --variants {input.vcf} \
         --model {input.model} \
         --weights {input.weights} \
@@ -227,7 +227,7 @@ if config["GenomeBuild"] == "GRCh38":
         shell:
             """
             tabix -p vcf {input.vcf} &> {log};
-            KERAS_BACKEND=tensorflow python {params.cadd}/src/scripts/lib/tools/MMSplice.py -i {input.vcf} \
+            KERAS_BACKEND=tensorflow MMSplice.py -i {input.vcf} \
             -g {input.transcripts} \
             -f {input.reference} | \
             grep -v '^Variant(CHROM=' | \
@@ -251,7 +251,7 @@ rule annotation:
     shell:
         """
         zcat {input.vcf} \
-        | python {params.cadd}/src/scripts/annotateVEPvcf.py \
+        | annotateVEPvcf.py \
             -c {input.reference_cfg} \
         | gzip -c > {output} 2> {log}
         """
@@ -272,7 +272,7 @@ rule imputation:
     shell:
         """
         zcat {input.tsv} \
-        | python {params.cadd}/src/scripts/trackTransformation.py -b \
+        | trackTransformation.py -b \
             -c {input.impute_cfg} -o {output} --noheader &>> {log};
         """
 
@@ -295,10 +295,10 @@ rule score:
         columns=config["Columns"],
     shell:
         """
-        python {params.cadd}/src/scripts/predictSKmodel.py \
+        predictSKmodel.py \
             -i {input.impute} -m {input.model_file} -a {input.anno} \
-        | python {params.cadd}/src/scripts/max_line_hierarchy.py --all \
-        | python {params.cadd}/src/scripts/appendPHREDscore.py \
+        | max_line_hierarchy.py --all \
+        | appendPHREDscore.py \
             -t {input.conversion_table} > {output} 2>> {log};
     
         if [ "{params.use_anno}" = 'False' ]
