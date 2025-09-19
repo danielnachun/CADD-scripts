@@ -6,4 +6,3 @@ channels:
   - nodefaults
 dependencies:
   - cadd-scripts-mmsplice
-  - tensorflow-gpu
