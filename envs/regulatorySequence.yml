@@ -1,13 +1,9 @@
----
+name: regulatorysequence
 channels:
-  - bioconda
+  - dnachun
   - conda-forge
+  - bioconda
   - nodefaults
 dependencies:
-  - numpy<=1.23.5
-  - click
-  - pyfaidx
-  - pybedtools
+  - cadd-scripts-regseq
   - tensorflow-gpu
-  - seqiolib
-  - vcfpy
